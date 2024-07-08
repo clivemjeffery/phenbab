@@ -1,10 +1,10 @@
 {
-  "name": "friends",
+  "name": "phenbab",
   "version": "0.0.0",
   "scripts": {
-    "dev": "vite --open",
+    "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "tsc && vite build && vite preview --host --open"
+    "preview": "tsc && vite build && vite preview --host"
   },
   "typeRoots": [
     "node_modules/@types",
@@ -15,6 +15,6 @@
     "vite": "^5.0.11"
   },
   "dependencies": {
-    "babylonjs": "^6.38.0"
+    "babylonjs": "^7.14.0"
   }
 }

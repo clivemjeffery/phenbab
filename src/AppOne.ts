@@ -39,7 +39,9 @@ var createScene = function (engine: BABYLON.Engine, canvas: HTMLCanvasElement) {
     var scene = new BABYLON.Scene(engine);
 
     // This creates and positions a free camera (non-mesh)
-    var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+    //var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+    var camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 3, new BABYLON.Vector3(0, 0, 0), scene);
+
 
     // This targets the camera to scene origin
     camera.setTarget(BABYLON.Vector3.Zero());
@@ -54,40 +56,55 @@ var createScene = function (engine: BABYLON.Engine, canvas: HTMLCanvasElement) {
     light.intensity = 0.7;
 
     // Our built-in 'sphere' shape.
-    var sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { diameter: 2, segments: 32 }, scene);
+    //var sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { diameter: 2, segments: 32 }, scene);
     // Move the sphere upward 1/2 its height
-    let startPos = 2;
-    sphere.position.y = startPos;
+    //let startPos = 2;
+    //sphere.position.y = startPos;
+
+    // CJ beginnings of goal
+    // The distance between the inside of the posts is 7.32m
+    // and the distance from the lower edge of the crossbar to
+    // the ground is 2.44 m
+    const gpLeft = BABYLON.MeshBuilder.CreateCylinder("gpLeft", {
+            height: 2.44, // need to offset by thickness
+            diameter: 0.1,
+        }, scene);
+    gpLeft.position.y = 1.22;
+    gpLeft.position.x = -7.32/2;
+
+    const gpRight = BABYLON.MeshBuilder.CreateCylinder("gpRight", {
+        height: 2.44, // need to offset by thickness
+        diameter: 0.1,
+    }, scene);
+    gpRight.position.y = 1.22;
+    gpRight.position.x = 7.32/2;
+
+    const xBar = BABYLON.MeshBuilder.CreateCylinder("gpRight", {
+        height: 7.32, // need to offset by thickness
+        diameter: 0.1,
+    }, scene);
+    xBar.rotation = new BABYLON.Vector3(Math.PI/2, Math.PI/2, 0);
+    xBar.position.y = 2.44;
 
     // Our built-in 'ground' shape.
-    var ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 6, height: 6 }, scene);
+    // Refashion to be football pitch-like
+    // Web source: The majority of Premier League football pitches
+    // measure 105.16m x 67.67m.
+    var ground = BABYLON.MeshBuilder.CreateGround("pitch", 
+        { 
+            width: 68,
+            height: 105 // actually depth since y is vertical 
+
+        }, scene);
     var groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+    
     groundMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.8, 0.5); // RGB for a greenish color
     ground.material = groundMaterial;
     groundMaterial.bumpTexture = new BABYLON.Texture("./normal.jpg", scene);
-    //groundMaterial.bumpTexture.level = 0.125;    
 
-
-    var redMaterial = new BABYLON.StandardMaterial("redMaterial", scene);
-    redMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0); // RGB for red
-    sphere.material = redMaterial;
-
-    var sphereVelocity = 0;
-    var gravity = 0.009;
-    var reboundLoss = 0.1;
 
     scene.registerBeforeRender(() => {
-        sphereVelocity += gravity;
-        let newY = sphere.position.y - sphereVelocity;
-        sphere.position.y -= sphereVelocity
-        if (newY < 1) {
-            sphereVelocity = (reboundLoss - 1) * sphereVelocity;
-            newY = 1;
-        }
-        sphere.position.y = newY;
-        if (Math.abs(sphereVelocity) <= gravity && newY < 1 + gravity) {
-            sphere.position.y = startPos++;
-        }
+        
     });
 
     return scene;
