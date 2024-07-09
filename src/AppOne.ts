@@ -1,10 +1,30 @@
-import * as BABYLON from 'babylonjs'
+import {
+    ArcRotateCamera,
+    Color3,
+    CubeTexture,
+    Engine,
+    HemisphericLight,
+    MeshBuilder,
+    Scene,
+    StandardMaterial,
+    Texture,
+    Vector3
+} from "@babylonjs/core";
+
+import { Inspector } from "@babylonjs/inspector";
+
+import { NormalMaterial } from "@babylonjs/materials";
+
+import {
+        GrassProceduralTexture
+} from "@babylonjs/procedural-textures";
+
 export class AppOne {
-    engine: BABYLON.Engine;
-    scene: BABYLON.Scene;
+    engine: Engine;
+    scene: Scene;
 
     constructor(readonly canvas: HTMLCanvasElement) {
-        this.engine = new BABYLON.Engine(canvas)
+        this.engine = new Engine(canvas)
         window.addEventListener('resize', () => {
             this.engine.resize();
         });
@@ -14,9 +34,9 @@ export class AppOne {
 
     debug(debugOn: boolean = true) {
         if (debugOn) {
-            this.scene.debugLayer.show({ overlay: true });
+            Inspector.Show(this.scene, {});
         } else {
-            this.scene.debugLayer.hide();
+            Inspector.Hide();
         }
     }
 
@@ -32,76 +52,78 @@ export class AppOne {
 }
 
 
-var createScene = function (engine: BABYLON.Engine, canvas: HTMLCanvasElement) {
+var createScene = function (engine: Engine, canvas: HTMLCanvasElement) {
     // this is the default code from the playground:
 
     // This creates a basic Babylon Scene object (non-mesh)
-    var scene = new BABYLON.Scene(engine);
+    var scene = new Scene(engine);
 
     // This creates and positions a free camera (non-mesh)
-    //var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
-    var camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 3, new BABYLON.Vector3(0, 0, 0), scene);
-
-
-    // This targets the camera to scene origin
-    camera.setTarget(BABYLON.Vector3.Zero());
-
-    // This attaches the camera to the canvas
+    var camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 3, new Vector3(0, -1.8, -10), scene);
+    camera.setTarget(Vector3.Zero()); // This targets the camera to scene origin
     camera.attachControl(canvas, true);
+    camera.upperBetaLimit = Math.PI / 2.2;
 
     // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    var light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
 
-    // Default intensity is 1. Let's dim the light a small amount
-    light.intensity = 0.7;
+    // Most examples dim light a small amount
+    light.intensity = 0.8;
 
-    // Our built-in 'sphere' shape.
-    //var sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { diameter: 2, segments: 32 }, scene);
-    // Move the sphere upward 1/2 its height
-    //let startPos = 2;
-    //sphere.position.y = startPos;
+    const skybox = MeshBuilder.CreateBox("skyBox", {size:250}, scene);
+    const skyboxMaterial = new StandardMaterial("skyBox", scene);
+    skyboxMaterial.backFaceCulling = false;
+    skyboxMaterial.reflectionTexture = new CubeTexture("textures/skybox", scene);
+    skyboxMaterial.reflectionTexture.coordinatesMode = Texture.SKYBOX_MODE;
+    skyboxMaterial.diffuseColor = new Color3(0, 0, 0);
+    skyboxMaterial.specularColor = new Color3(0, 0, 0);
+    skybox.material = skyboxMaterial;
+
+    // Ground is the pitch, for now.
+    // Web source: The majority of Premier League football pitches
+    // measure 105.16m x 67.67m.
+    let pitchMesh = MeshBuilder.CreateGround("pitch", 
+        { 
+            width: 68,
+            height: 105 // actually depth since y is vertical 
+
+        }, scene);
+    let pitchMaterial = new StandardMaterial("pitchMat", scene);
+    let grassTexture = new GrassProceduralTexture("grassTex", 4096, scene);
+    pitchMaterial.ambientTexture = grassTexture;
+    pitchMesh.material = pitchMaterial;
 
     // CJ beginnings of goal
     // The distance between the inside of the posts is 7.32m
     // and the distance from the lower edge of the crossbar to
     // the ground is 2.44 m
-    const gpLeft = BABYLON.MeshBuilder.CreateCylinder("gpLeft", {
+    const gpLeft = MeshBuilder.CreateCylinder("gpLeft", {
             height: 2.44, // need to offset by thickness
             diameter: 0.1,
         }, scene);
     gpLeft.position.y = 1.22;
     gpLeft.position.x = -7.32/2;
 
-    const gpRight = BABYLON.MeshBuilder.CreateCylinder("gpRight", {
+    const gpRight = MeshBuilder.CreateCylinder("gpRight", {
         height: 2.44, // need to offset by thickness
         diameter: 0.1,
     }, scene);
     gpRight.position.y = 1.22;
     gpRight.position.x = 7.32/2;
 
-    const xBar = BABYLON.MeshBuilder.CreateCylinder("gpRight", {
+    const xBar = MeshBuilder.CreateCylinder("gpRight", {
         height: 7.32, // need to offset by thickness
         diameter: 0.1,
     }, scene);
-    xBar.rotation = new BABYLON.Vector3(Math.PI/2, Math.PI/2, 0);
+    xBar.rotation = new Vector3(Math.PI/2, Math.PI/2, 0);
     xBar.position.y = 2.44;
 
-    // Our built-in 'ground' shape.
-    // Refashion to be football pitch-like
-    // Web source: The majority of Premier League football pitches
-    // measure 105.16m x 67.67m.
-    var ground = BABYLON.MeshBuilder.CreateGround("pitch", 
-        { 
-            width: 68,
-            height: 105 // actually depth since y is vertical 
-
-        }, scene);
-    var groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+    let gpostMaterial = new StandardMaterial("gpostMat", scene);
+    gpostMaterial.diffuseColor = new Color3(1, 1, 1);
     
-    groundMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.8, 0.5); // RGB for a greenish color
-    ground.material = groundMaterial;
-    groundMaterial.bumpTexture = new BABYLON.Texture("./normal.jpg", scene);
-
+    xBar.material = gpostMaterial;
+    gpRight.material = gpostMaterial;
+    gpLeft.material = gpostMaterial;
 
     scene.registerBeforeRender(() => {
         
